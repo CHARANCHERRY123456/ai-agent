@@ -1,18 +1,28 @@
-// just for testing i will updagte it soon
 import express from 'express';
+import { addMessageToSession, getLastNMessages } from '../memory/sessionStorage';
 
-const router = express.Router();
+const agentRouter = express.Router();
 
-router.post('/message', async (req, res, next) => {
+agentRouter.post('/message', async (req, res, next) => {
   try {
     const { message, session_id } = req.body;
     if (!message?.trim() || !session_id?.trim()) {
       return res.status(400).json({ error: 'message and session_id are required' });
     }
-    res.json({ reply: `Received: "${message}" in session: ${session_id}` });
+
+    addMessageToSession(session_id, 'user', message);
+
+    const history = getLastNMessages(session_id, 2);
+
+    const memoryPreview = history.map((m) => `[${m.role}]: ${m.content}`).join('\n');
+    const reply = `Memory:\n${memoryPreview}\n\n Reply: [llm response here]`;
+
+    addMessageToSession(session_id, 'assistant', reply);
+
+    res.json({ reply });
   } catch (err) {
     next(err);
   }
 });
 
-export default router;
+export default agentRouter;
