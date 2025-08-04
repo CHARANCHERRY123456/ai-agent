@@ -18,7 +18,7 @@ agentRouter.post('/message', async (req, res, next) => {
     const reply = `Memory:\n${memoryPreview}\n\n Reply: [llm response here]`;
 
     addMessageToSession(session_id, 'assistant', reply);
-
+    
     res.json({ reply });
   } catch (err) {
     next(err);
