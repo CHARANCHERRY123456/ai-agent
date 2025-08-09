@@ -1,8 +1,10 @@
 import express from 'express';
 import { addMessageToSession, getLastNMessages } from '../memory/sessionStorage';
 import { getTopKRelevantChunks, generateResponse, buildPrompt } from '../rag/embed';
+import { PluginManager } from '../plugins/pluginManager';
 
 const agentRouter = express.Router();
+const pluginManager = new PluginManager();
 
 agentRouter.post('/message', async (req, res, next) => {
   try {
@@ -20,8 +22,12 @@ agentRouter.post('/message', async (req, res, next) => {
     // Get relevant chunks from knowledge base
     const topChunks = await getTopKRelevantChunks(message, 3);
 
-    // Build comprehensive prompt with system instructions, memory, and RAG context
-    const prompt = buildPrompt(message, history, topChunks);
+    // Execute plugins if needed
+    const pluginResults = await pluginManager.executePlugins(message);
+    const formattedPluginResults = pluginManager.formatPluginResults(pluginResults);
+
+    // Build comprehensive prompt with system instructions, memory, RAG context, and plugin results
+    const prompt = buildPrompt(message, history, topChunks, formattedPluginResults);
 
     // Generate AI response using Gemini
     const aiResponse = await generateResponse(prompt);
