@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { cosineSimilarity } from '../utils/cosine';
 import { loadChunks } from './loadDocs';
+import { Message } from '../memory/sessionStorage';
 
 const getGeminiApiKey = () => {
   const apiKey = process.env.GOOGLE_API_KEY;
@@ -12,6 +13,10 @@ const getGeminiApiKey = () => {
 
 const getGeminiEmbedUrl = () => {
   return 'https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=' + getGeminiApiKey();
+};
+
+const getGeminiChatUrl = () => {
+  return 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + getGeminiApiKey();
 };
 
 type ChunkData = { text: string; vector: number[] };
@@ -32,6 +37,74 @@ export const embedText = async (text: string): Promise<number[]> => {
     console.error('Error embedding text:', error);
     throw new Error(`Failed to embed text: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+};
+
+export const generateResponse = async (prompt: string): Promise<string> => {
+  try {
+    const response = await axios.post(getGeminiChatUrl(), {
+      contents: [
+        {
+          parts: [{ text: prompt }]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1024,
+      }
+    });
+    
+    if (!response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+      throw new Error('Invalid response from Gemini Chat API');
+    }
+    
+    return response.data.candidates[0].content.parts[0].text;
+  } catch (error) {
+    console.error('Error generating response:', error);
+    throw new Error(`Failed to generate response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+export const buildPrompt = (
+  userMessage: string,
+  memoryMessages: Message[],
+  ragChunks: string[],
+  pluginResults?: string
+): string => {
+  const systemInstructions = `You are a helpful AI agent with access to knowledge about technology, blogging, markdown, AI concepts, and web development. 
+
+Your capabilities:
+- Answer questions using your knowledge base
+- Maintain conversation context
+- Help with technical concepts
+- Provide clear, helpful explanations
+
+Guidelines:
+- Use the provided context to enhance your responses
+- Reference relevant information from the knowledge base when applicable
+- Keep responses concise but informative
+- If you don't know something, say so honestly`;
+
+  const contextSection = ragChunks.length > 0 
+    ? `\n\nRelevant Knowledge Base Information:\n${ragChunks.map((chunk, i) => `[${i + 1}] ${chunk.trim()}`).join('\n\n')}`
+    : '';
+
+  const memorySection = memoryMessages.length > 0
+    ? `\n\nRecent Conversation History:\n${memoryMessages.map(m => `${m.role === 'user' ? 'Human' : 'Assistant'}: ${m.content}`).join('\n')}`
+    : '';
+
+  const pluginSection = pluginResults 
+    ? `\n\nPlugin Results:\n${pluginResults}`
+    : '';
+
+  const prompt = `${systemInstructions}${contextSection}${memorySection}${pluginSection}
+
+Current User Message: ${userMessage}
+
+Please provide a helpful response:`;
+
+  return prompt;
 };
 
 export const loadAndEmbedChunks = async () => {

@@ -1,6 +1,6 @@
 import express from 'express';
 import { addMessageToSession, getLastNMessages } from '../memory/sessionStorage';
-import { getTopKRelevantChunks } from '../rag/embed';
+import { getTopKRelevantChunks, generateResponse, buildPrompt } from '../rag/embed';
 
 const agentRouter = express.Router();
 
@@ -11,18 +11,25 @@ agentRouter.post('/message', async (req, res, next) => {
       return res.status(400).json({ error: 'message and session_id are required' });
     }
 
+    // Add user message to session memory
     addMessageToSession(session_id, 'user', message);
 
+    // Get conversation history (last 2 messages for context)
     const history = getLastNMessages(session_id, 2);
 
-    const memoryPreview = history.map((m) => `[${m.role}]: ${m.content}`).join('\n');
-
+    // Get relevant chunks from knowledge base
     const topChunks = await getTopKRelevantChunks(message, 3);
-    const reply = `Memory:\n${memoryPreview}\n\n Reply: ${topChunks.join('\n')}`;
 
-    addMessageToSession(session_id, 'assistant', reply);
+    // Build comprehensive prompt with system instructions, memory, and RAG context
+    const prompt = buildPrompt(message, history, topChunks);
+
+    // Generate AI response using Gemini
+    const aiResponse = await generateResponse(prompt);
+
+    // Add AI response to session memory
+    addMessageToSession(session_id, 'assistant', aiResponse);
     
-    res.json({ reply });
+    res.json({ reply: aiResponse });
   } catch (err) {
     next(err);
   }
