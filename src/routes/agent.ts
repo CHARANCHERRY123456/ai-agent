@@ -13,26 +13,19 @@ agentRouter.post('/message', async (req, res, next) => {
       return res.status(400).json({ error: 'message and session_id are required' });
     }
 
-    // Add user message to session memory
     addMessageToSession(session_id, 'user', message);
 
-    // Get conversation history (last 2 messages for context)
     const history = getLastNMessages(session_id, 2);
 
-    // Get relevant chunks from knowledge base
     const topChunks = await getTopKRelevantChunks(message, 3);
 
-    // Execute plugins if needed
     const pluginResults = await pluginManager.executePlugins(message);
     const formattedPluginResults = pluginManager.formatPluginResults(pluginResults);
 
-    // Build comprehensive prompt with system instructions, memory, RAG context, and plugin results
     const prompt = buildPrompt(message, history, topChunks, formattedPluginResults);
 
-    // Generate AI response using Gemini
     const aiResponse = await generateResponse(prompt);
 
-    // Add AI response to session memory
     addMessageToSession(session_id, 'assistant', aiResponse);
     
     res.json({ reply: aiResponse });

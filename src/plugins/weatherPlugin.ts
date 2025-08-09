@@ -4,7 +4,6 @@ export const weatherPlugin: Plugin = {
   name: 'weather',
   description: 'Get current weather information for cities',
   execute: async (input: string): Promise<string> => {
-    // More sophisticated city extraction
     const cityPatterns = [
       /weather.*?in\s+([a-zA-Z\s]+)(?:\?|$)/i,
       /temperature.*?in\s+([a-zA-Z\s]+)(?:\?|$)/i,
@@ -21,7 +20,6 @@ export const weatherPlugin: Plugin = {
       }
     }
     
-    // Realistic weather data with variations
     const weatherDatabase: Record<string, { temp: string; condition: string; humidity: string; windSpeed: string }> = {
       'bangalore': { temp: '24°C', condition: 'Partly cloudy with light breeze', humidity: '68%', windSpeed: '12 km/h' },
       'mumbai': { temp: '29°C', condition: 'Humid and partly sunny', humidity: '78%', windSpeed: '8 km/h' },

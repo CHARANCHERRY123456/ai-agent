@@ -4,7 +4,7 @@ import path from 'path';
 const DOCS_DIR = path.join(__dirname, 'docs');
 
 export const loadChunks = (): string[] => {
-  const CHUNK_SIZE = 300; // characters
+  const CHUNK_SIZE = 300;
   const chunks: string[] = [];
 
   const files = fs.readdirSync(DOCS_DIR).filter(file => file.endsWith('.md') || file.endsWith('.txt'));

@@ -5,12 +5,12 @@ import { mathPlugin } from './mathPlugin';
 export class PluginManager {
   private plugins: Plugin[] = [weatherPlugin, mathPlugin];
 
-  // Intent detection using natural language patterns
+
+//   detect which type to execute
   detectIntent(message: string): Plugin[] {
     const msg = message.toLowerCase();
     const triggeredPlugins: Plugin[] = [];
 
-    // Weather intent - look for natural weather queries
     const weatherPatterns = [
       /weather.*?in\s+\w+/i,
       /temperature.*?in\s+\w+/i,
@@ -26,7 +26,6 @@ export class PluginManager {
       triggeredPlugins.push(weatherPlugin);
     }
 
-    // Math intent - detect calculation requests
     const mathPatterns = [
       /calculate\s+[\d\s+\-*/().]+/i,
       /what.*?is\s+[\d\s+\-*/().]+/i,
@@ -76,7 +75,6 @@ export class PluginManager {
     if (results.length === 0) return '';
     
     return results.map(result => {
-      // Format results more naturally without screaming plugin names
       if (result.pluginName === 'weather') {
         return `Weather data: ${result.output}`;
       } else if (result.pluginName === 'math') {

@@ -5,7 +5,6 @@ export const mathPlugin: Plugin = {
   description: 'Evaluate mathematical expressions and solve calculations',
   execute: (input: string): string => {
     try {
-      // Look for mathematical expressions in natural language
       const patterns = [
         /(\d+(?:\.\d+)?)\s*([+\-*/])\s*(\d+(?:\.\d+)?)/g,
         /calculate\s+([\d\s+\-*/().]+)/i,
@@ -19,10 +18,8 @@ export const mathPlugin: Plugin = {
         const matches = input.match(pattern);
         if (matches) {
           if (pattern.global) {
-            // For the first pattern, we want the full match
             foundExpression = matches[0];
           } else {
-            // For other patterns, we want the captured group
             foundExpression = matches[1] || matches[0];
           }
           break;
@@ -35,7 +32,6 @@ export const mathPlugin: Plugin = {
       
       const result = evaluateExpression(foundExpression.trim());
       
-      // Make the response more conversational
       if (foundExpression.includes('+')) {
         return `${foundExpression} equals ${result}`;
       } else if (foundExpression.includes('*')) {
@@ -65,25 +61,20 @@ function evaluateSimpleExpression(num1: number, operator: string, num2: number):
 }
 
 function evaluateExpression(expression: string): number {
-  // Simple expression evaluator (handles +, -, *, /)
-  // Remove spaces
+
   const cleanExpr = expression.replace(/\s/g, '');
   
-  // Security: Only allow numbers, operators, and decimal points
   if (!/^[\d+\-*/.]+$/.test(cleanExpr)) {
     throw new Error('Invalid characters in expression');
   }
   
-  // Use Function constructor for safe evaluation (better than eval)
   try {
-    // Split by operators while keeping them
     const tokens = cleanExpr.split(/([+\-*/])/).filter(token => token !== '');
     
     if (tokens.length < 3 || tokens.length % 2 === 0) {
       throw new Error('Invalid expression format');
     }
     
-    // Simple left-to-right evaluation (no operator precedence for simplicity)
     let result = parseFloat(tokens[0]);
     
     for (let i = 1; i < tokens.length; i += 2) {

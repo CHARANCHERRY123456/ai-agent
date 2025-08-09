@@ -63,14 +63,12 @@ export const generateResponse = async (prompt: string): Promise<string> => {
   } catch (error) {
     console.error('Error generating response:', error);
     
-    // Provide a graceful fallback response
     if (error instanceof Error && error.message.includes('rate limit')) {
       return "I'm experiencing high demand right now. Please try again in a moment.";
     } else if (error instanceof Error && error.message.includes('API key')) {
       return "I'm having trouble accessing my knowledge right now. Please check back soon.";
     }
     
-    // Generic fallback
     return "I apologize, but I'm having trouble generating a response right now. Could you try rephrasing your question?";
   }
 };
@@ -126,11 +124,10 @@ export const loadAndEmbedChunks = async () => {
 
     for (let i = 0; i < chunks.length; i++) {
       const text = chunks[i];
-      if (text.trim().length > 10) { // Only embed meaningful chunks
+      if (text.trim().length > 10) {
         const vector = await embedText(text);
         memoryStore.push({ text, vector });
         
-        // Add small delay to avoid rate limiting
         if (i % 5 === 0) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
@@ -163,6 +160,6 @@ export const getTopKRelevantChunks = async (query: string, k: number): Promise<s
       .map(x => x.text);
   } catch (error) {
     console.error('Error getting relevant chunks:', error);
-    return []; // Return empty array on error to not break the flow
+    return [];
   }
 };
