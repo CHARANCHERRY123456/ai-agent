@@ -1,5 +1,6 @@
 import express from 'express';
 import { addMessageToSession, getLastNMessages } from '../memory/sessionStorage';
+import { getTopKRelevantChunks } from '../rag/embed';
 
 const agentRouter = express.Router();
 
@@ -15,7 +16,9 @@ agentRouter.post('/message', async (req, res, next) => {
     const history = getLastNMessages(session_id, 2);
 
     const memoryPreview = history.map((m) => `[${m.role}]: ${m.content}`).join('\n');
-    const reply = `Memory:\n${memoryPreview}\n\n Reply: [llm response here]`;
+
+    const topChunks = await getTopKRelevantChunks(message, 3);
+    const reply = `Memory:\n${memoryPreview}\n\n Reply: ${topChunks.join('\n')}`;
 
     addMessageToSession(session_id, 'assistant', reply);
     
