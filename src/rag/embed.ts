@@ -56,13 +56,22 @@ export const generateResponse = async (prompt: string): Promise<string> => {
     });
     
     if (!response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-      throw new Error('Invalid response from Gemini Chat API');
+      throw new Error('Received empty response from Gemini API');
     }
     
     return response.data.candidates[0].content.parts[0].text;
   } catch (error) {
     console.error('Error generating response:', error);
-    throw new Error(`Failed to generate response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    
+    // Provide a graceful fallback response
+    if (error instanceof Error && error.message.includes('rate limit')) {
+      return "I'm experiencing high demand right now. Please try again in a moment.";
+    } else if (error instanceof Error && error.message.includes('API key')) {
+      return "I'm having trouble accessing my knowledge right now. Please check back soon.";
+    }
+    
+    // Generic fallback
+    return "I apologize, but I'm having trouble generating a response right now. Could you try rephrasing your question?";
   }
 };
 
@@ -72,37 +81,38 @@ export const buildPrompt = (
   ragChunks: string[],
   pluginResults?: string
 ): string => {
-  const systemInstructions = `You are a helpful AI agent with access to knowledge about technology, blogging, markdown, AI concepts, and web development. 
+  const systemInstructions = `You're a knowledgeable assistant specializing in technology, blogging, web development, and AI concepts. You have access to a curated knowledge base and can use various tools when needed.
 
-Your capabilities:
-- Answer questions using your knowledge base
-- Maintain conversation context
-- Help with technical concepts
-- Provide clear, helpful explanations
+Communication style:
+- Be conversational and helpful, like talking to a colleague
+- Reference specific information from your knowledge base when relevant
+- Don't mention that you're an AI or reference "training data"
+- If using tools (weather, calculations), incorporate results naturally into your response
+- Keep responses practical and actionable
 
-Guidelines:
-- Use the provided context to enhance your responses
-- Reference relevant information from the knowledge base when applicable
-- Keep responses concise but informative
-- If you don't know something, say so honestly`;
+When answering:
+- Draw from your knowledge base to provide accurate, detailed information
+- Use examples and practical tips when helpful
+- If you're not sure about something, say so honestly
+- Structure longer responses with clear sections or bullet points`;
 
   const contextSection = ragChunks.length > 0 
-    ? `\n\nRelevant Knowledge Base Information:\n${ragChunks.map((chunk, i) => `[${i + 1}] ${chunk.trim()}`).join('\n\n')}`
+    ? `\n\nRelevant information from knowledge base:\n${ragChunks.map((chunk, i) => `${chunk.trim()}`).join('\n\n---\n\n')}`
     : '';
 
   const memorySection = memoryMessages.length > 0
-    ? `\n\nRecent Conversation History:\n${memoryMessages.map(m => `${m.role === 'user' ? 'Human' : 'Assistant'}: ${m.content}`).join('\n')}`
+    ? `\n\nConversation context:\n${memoryMessages.map(m => `${m.role === 'user' ? 'User' : 'You'}: ${m.content}`).join('\n')}`
     : '';
 
   const pluginSection = pluginResults 
-    ? `\n\nPlugin Results:\n${pluginResults}`
+    ? `\n\nTool results:\n${pluginResults}`
     : '';
 
   const prompt = `${systemInstructions}${contextSection}${memorySection}${pluginSection}
 
-Current User Message: ${userMessage}
+User asks: ${userMessage}
 
-Please provide a helpful response:`;
+Response:`;
 
   return prompt;
 };

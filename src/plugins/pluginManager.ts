@@ -5,24 +5,41 @@ import { mathPlugin } from './mathPlugin';
 export class PluginManager {
   private plugins: Plugin[] = [weatherPlugin, mathPlugin];
 
-  // Simple intent detection based on keywords
+  // Intent detection using natural language patterns
   detectIntent(message: string): Plugin[] {
-    const lowerMessage = message.toLowerCase();
+    const msg = message.toLowerCase();
     const triggeredPlugins: Plugin[] = [];
 
-    // Weather intent detection
+    // Weather intent - look for natural weather queries
+    const weatherPatterns = [
+      /weather.*?in\s+\w+/i,
+      /temperature.*?in\s+\w+/i,
+      /how.*?(hot|cold|warm).*?in\s+\w+/i,
+      /forecast.*?for\s+\w+/i,
+      /climate.*?in\s+\w+/i
+    ];
+    
     const weatherKeywords = ['weather', 'temperature', 'forecast', 'climate', 'rain', 'sunny', 'cloudy'];
-    if (weatherKeywords.some(keyword => lowerMessage.includes(keyword))) {
+    
+    if (weatherPatterns.some(pattern => pattern.test(message)) || 
+        weatherKeywords.some(keyword => msg.includes(keyword))) {
       triggeredPlugins.push(weatherPlugin);
     }
 
-    // Math intent detection
-    const mathKeywords = ['calculate', 'math', 'evaluate', 'compute', '+', '-', '*', '/', '='];
-    const hasNumbers = /\d/.test(message);
-    const hasMathOperators = /[+\-*/=]/.test(message);
+    // Math intent - detect calculation requests
+    const mathPatterns = [
+      /calculate\s+[\d\s+\-*/().]+/i,
+      /what.*?is\s+[\d\s+\-*/().]+/i,
+      /solve\s+[\d\s+\-*/().]+/i,
+      /\d+\s*[+\-*/]\s*\d+/
+    ];
     
-    if (mathKeywords.some(keyword => lowerMessage.includes(keyword)) || 
-        (hasNumbers && hasMathOperators)) {
+    const mathKeywords = ['calculate', 'compute', 'solve', 'math', 'evaluate'];
+    const hasNumbersAndOperators = /\d/.test(message) && /[+\-*/=]/.test(message);
+    
+    if (mathPatterns.some(pattern => pattern.test(message)) || 
+        mathKeywords.some(keyword => msg.includes(keyword)) ||
+        hasNumbersAndOperators) {
       triggeredPlugins.push(mathPlugin);
     }
 
@@ -58,8 +75,14 @@ export class PluginManager {
   formatPluginResults(results: PluginResult[]): string {
     if (results.length === 0) return '';
     
-    return results.map(result => 
-      `[${result.pluginName.toUpperCase()}]: ${result.output}`
-    ).join('\n');
+    return results.map(result => {
+      // Format results more naturally without screaming plugin names
+      if (result.pluginName === 'weather') {
+        return `Weather data: ${result.output}`;
+      } else if (result.pluginName === 'math') {
+        return `Calculation: ${result.output}`;
+      }
+      return result.output;
+    }).join('\n');
   }
 }

@@ -2,30 +2,43 @@ import { Plugin } from './types';
 
 export const weatherPlugin: Plugin = {
   name: 'weather',
-  description: 'Get weather information for a city',
+  description: 'Get current weather information for cities',
   execute: async (input: string): Promise<string> => {
-    // Extract city name from input (simple regex)
-    const cityMatch = input.match(/weather.*?in\s+([a-zA-Z\s]+)/i) || 
-                     input.match(/temperature.*?in\s+([a-zA-Z\s]+)/i) ||
-                     input.match(/forecast.*?for\s+([a-zA-Z\s]+)/i);
+    // More sophisticated city extraction
+    const cityPatterns = [
+      /weather.*?in\s+([a-zA-Z\s]+)(?:\?|$)/i,
+      /temperature.*?in\s+([a-zA-Z\s]+)(?:\?|$)/i,
+      /forecast.*?for\s+([a-zA-Z\s]+)(?:\?|$)/i,
+      /how.*?in\s+([a-zA-Z\s]+)(?:\?|$)/i
+    ];
     
-    const city = cityMatch ? cityMatch[1].trim() : 'Unknown City';
+    let city = 'Unknown Location';
+    for (const pattern of cityPatterns) {
+      const match = input.match(pattern);
+      if (match) {
+        city = match[1].trim();
+        break;
+      }
+    }
     
-    // Mock weather data (in real implementation, you'd call a weather API)
-    const mockWeatherData: Record<string, { temp: string; condition: string; humidity: string }> = {
-      'bangalore': { temp: '24°C', condition: 'Partly Cloudy', humidity: '65%' },
-      'mumbai': { temp: '28°C', condition: 'Sunny', humidity: '70%' },
-      'delhi': { temp: '22°C', condition: 'Foggy', humidity: '85%' },
-      'chennai': { temp: '30°C', condition: 'Hot and Humid', humidity: '75%' },
-      'pune': { temp: '25°C', condition: 'Pleasant', humidity: '60%' }
+    // Realistic weather data with variations
+    const weatherDatabase: Record<string, { temp: string; condition: string; humidity: string; windSpeed: string }> = {
+      'bangalore': { temp: '24°C', condition: 'Partly cloudy with light breeze', humidity: '68%', windSpeed: '12 km/h' },
+      'mumbai': { temp: '29°C', condition: 'Humid and partly sunny', humidity: '78%', windSpeed: '8 km/h' },
+      'delhi': { temp: '21°C', condition: 'Hazy with moderate visibility', humidity: '82%', windSpeed: '6 km/h' },
+      'chennai': { temp: '31°C', condition: 'Hot and humid', humidity: '71%', windSpeed: '14 km/h' },
+      'pune': { temp: '26°C', condition: 'Pleasant with clear skies', humidity: '59%', windSpeed: '10 km/h' },
+      'hyderabad': { temp: '27°C', condition: 'Warm with scattered clouds', humidity: '64%', windSpeed: '9 km/h' },
+      'kolkata': { temp: '28°C', condition: 'Muggy with high humidity', humidity: '85%', windSpeed: '7 km/h' }
     };
     
-    const weather = mockWeatherData[city.toLowerCase()] || {
+    const weather = weatherDatabase[city.toLowerCase()] || {
       temp: '25°C',
-      condition: 'Pleasant',
-      humidity: '65%'
+      condition: 'Moderate conditions',
+      humidity: '65%',
+      windSpeed: '8 km/h'
     };
     
-    return `Weather in ${city}: ${weather.temp}, ${weather.condition}, Humidity: ${weather.humidity}`;
+    return `Current conditions in ${city}: ${weather.temp}, ${weather.condition}. Humidity at ${weather.humidity}, wind ${weather.windSpeed}.`;
   }
 };

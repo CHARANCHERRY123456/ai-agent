@@ -2,32 +2,54 @@ import { Plugin } from './types';
 
 export const mathPlugin: Plugin = {
   name: 'math',
-  description: 'Evaluate mathematical expressions',
+  description: 'Evaluate mathematical expressions and solve calculations',
   execute: (input: string): string => {
     try {
-      // Extract mathematical expressions from input
-      const mathExpressions = input.match(/(\d+(?:\.\d+)?\s*[+\-*/]\s*\d+(?:\.\d+)?(?:\s*[+\-*/]\s*\d+(?:\.\d+)?)*)/g);
+      // Look for mathematical expressions in natural language
+      const patterns = [
+        /(\d+(?:\.\d+)?)\s*([+\-*/])\s*(\d+(?:\.\d+)?)/g,
+        /calculate\s+([\d\s+\-*/().]+)/i,
+        /what.*?is\s+([\d\s+\-*/().]+)/i,
+        /solve\s+([\d\s+\-*/().]+)/i
+      ];
       
-      if (!mathExpressions || mathExpressions.length === 0) {
-        // Try to find simple patterns like "2 + 2" or "calculate 5 * 3"
-        const simpleMatch = input.match(/(\d+(?:\.\d+)?)\s*([+\-*/])\s*(\d+(?:\.\d+)?)/);
-        if (simpleMatch) {
-          const [, num1, operator, num2] = simpleMatch;
-          const result = evaluateSimpleExpression(parseFloat(num1), operator, parseFloat(num2));
-          return `${num1} ${operator} ${num2} = ${result}`;
+      let foundExpression = '';
+      
+      for (const pattern of patterns) {
+        const matches = input.match(pattern);
+        if (matches) {
+          if (pattern.global) {
+            // For the first pattern, we want the full match
+            foundExpression = matches[0];
+          } else {
+            // For other patterns, we want the captured group
+            foundExpression = matches[1] || matches[0];
+          }
+          break;
         }
-        return 'No valid mathematical expression found in the input.';
       }
       
-      const results = mathExpressions.map(expr => {
-        const cleanExpr = expr.trim();
-        const result = evaluateExpression(cleanExpr);
-        return `${cleanExpr} = ${result}`;
-      });
+      if (!foundExpression) {
+        return 'I can help with calculations! Try asking something like "calculate 15 * 3" or "what is 100 - 25?"';
+      }
       
-      return results.join(', ');
+      const result = evaluateExpression(foundExpression.trim());
+      
+      // Make the response more conversational
+      if (foundExpression.includes('+')) {
+        return `${foundExpression} equals ${result}`;
+      } else if (foundExpression.includes('*')) {
+        return `${foundExpression} equals ${result}`;
+      } else if (foundExpression.includes('/')) {
+        return `${foundExpression} equals ${result}`;
+      } else if (foundExpression.includes('-')) {
+        return `${foundExpression} equals ${result}`;
+      }
+      
+      return `The answer is ${result}`;
+      
     } catch (error) {
-      return `Error evaluating mathematical expression: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      return `I had trouble with that calculation. Could you try rephrasing it? For example: "calculate 5 + 3" or "what is 12 * 4?"`;
     }
   }
 };
